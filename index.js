@@ -43,7 +43,7 @@ function processImage(jpeg) {
 
 	var now = Date.now();
 
-	if (recordStream && recordTo > now) {
+	if (recordStream && recordTo + 500 >= now) {
 		recordStream.pushJpeg(jpeg);
 
 	} else {
@@ -104,10 +104,9 @@ function processImage(jpeg) {
 
 		recordTo = now + 2500;
 
-		console.error("Record to " + recordTo);
+		console.error("Record to " + recordTo + "  stream=" + recordStream);
 
 		if (recordStream) {
-
 			for (; frames.length;) {
 				recordStream.pushJpeg(frames.shift());
 			}
