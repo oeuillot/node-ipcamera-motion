@@ -22,7 +22,6 @@ var nextFrame;
 var d1=new cv.Matrix();
 var d2=new cv.Matrix();
 var motion=new cv.Matrix();
-var kernel_ero = getStructuringElement(MORPH_RECT, Size(2,2));
 
 function processImage(jpeg) {
 	console.error("Receive jpeg: ", jpeg);
@@ -49,7 +48,7 @@ function processImage(jpeg) {
 		d2.absDiff(nextFrame, currentFrame);
 		motion.bitwiseAnd(d1, d2);
 		motion.threshold(35, 255);
-		motion.erode(kernel_ero);
+		motion.erode(1);
 
 		//var nc=motion.detectMotion()
 		
