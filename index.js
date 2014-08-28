@@ -19,6 +19,7 @@ function processImage(jpeg) {
 	console.error("Receive jpeg: ", jpeg);
 
 	cv.readImage(jpeg.data, function(err, mat) {
+		console.error("Read image: ", err, mat);
 		if (err) {
 			console.error(err);
 			return;
@@ -26,7 +27,9 @@ function processImage(jpeg) {
 
 		mat.convertGrayscale();
 
-		mat.saveAsync('/temp/img' + (cnt++) + '.jpg', function(error) {
+		console.error("Saving ...");
+
+		mat.saveAsync('/tmp/img' + (cnt++) + '.jpg', function(error) {
 			if (error) {
 				console.error(error);
 			}
