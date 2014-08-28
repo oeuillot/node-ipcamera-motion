@@ -59,7 +59,7 @@ function processImage(jpeg, saved) {
 				break;
 			}
 
-			frames.unshift();
+			frames.shift();
 		}
 
 		frames.push(jpeg);
