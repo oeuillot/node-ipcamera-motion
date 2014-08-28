@@ -24,10 +24,7 @@ var d2 = new cv.Matrix();
 var motion = new cv.Matrix();
 
 function processImage(jpeg) {
-	console.error("Receive jpeg: ", jpeg);
-
 	cv.readImage(jpeg.data, function(err, mat) {
-		console.error("Read image: ", err, mat);
 		if (err) {
 			console.error(err);
 			return;
