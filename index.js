@@ -19,9 +19,9 @@ var prevFrame;
 var currentFrame;
 var nextFrame;
 
-var d1=new cv.Matrix();
-var d2=new cv.Matrix();
-var motion=new cv.Matrix();
+var d1 = new cv.Matrix();
+var d2 = new cv.Matrix();
+var motion = new cv.Matrix();
 
 function processImage(jpeg) {
 	console.error("Receive jpeg: ", jpeg);
@@ -32,26 +32,27 @@ function processImage(jpeg) {
 			console.error(err);
 			return;
 		}
-		
+
 		mat.convertGrayscale();
 
-		prevFrame=currentFrame;
-		currentFrame=nextFrame;
-		nextFrame=mat;
-		
+		prevFrame = currentFrame;
+		currentFrame = nextFrame;
+		nextFrame = mat;
+
 		if (!prevFrame || !currentFrame || !nextFrame) {
 			multipartStream.once('jpeg', processImage);
 			return;
 		}
-		
+
 		d1.absDiff(prevFrame, nextFrame);
 		d2.absDiff(nextFrame, currentFrame);
 		motion.bitwiseAnd(d1, d2);
 		motion.threshold(35, 255);
 		motion.erode(1);
 
-		//var nc=motion.detectMotion()
-		
+		var dev = motion.meanStdDev();
+		console.error("Dev=", dev, dev.stddev);
+
 		console.error("Saving ...");
 
 		motion.saveAsync('/tmp/img' + (cnt++) + '.jpg', function(error) {
@@ -61,7 +62,7 @@ function processImage(jpeg) {
 
 			console.error("Motion saved");
 			multipartStream.once('jpeg', processImage);
-		
+
 		});
 	});
 }
