@@ -16,7 +16,7 @@ var multipartStream = new IPCamera.MultipartMjpegDecoderStream();
 function processImage(jpeg) {
 	console.error("Receive jpeg: ", jpeg);
 
-	cv.ReadImage(jpeg.data, function(err, mat) {
+	cv.readImage(jpeg.data, function(err, mat) {
 		if (err) {
 			console.error(err);
 			return;
