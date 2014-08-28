@@ -27,6 +27,7 @@ var motion = new cv.Matrix();
 var frames = [];
 var recordTo = 0;
 var recordStream = 0;
+var maxImages = 0;
 
 function processImage(jpeg, saved) {
 
@@ -65,7 +66,10 @@ function processImage(jpeg, saved) {
 		frames.push(jpeg);
 	}
 
-	console.error(frames.length + " images in memory");
+	if (frames.length > maxImages) {
+		maxImages = frames.length;
+		console.error(maxImages + " images in memory");
+	}
 
 	cv.readImage(jpeg.data, function(err, mat) {
 		if (err) {
