@@ -44,11 +44,7 @@ function processImage(jpeg) {
 	var now = Date.now();
 
 	if (recordStream && recordTo > now) {
-
 		recordStream.pushJpeg(jpeg);
-
-		processImage(jpeg, true);
-		return;
 
 	} else {
 		recordTo = 0;
