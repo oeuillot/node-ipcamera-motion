@@ -51,7 +51,12 @@ function processImage(jpeg) {
 		motion.erode(1);
 
 		var dev = motion.meanStdDev();
-		console.error("Dev=", dev, dev.stddev);
+		var stddev = dev.stddev.get(0, 0);
+		console.error("Deviation=", stddev);
+		if (stddev < 20) {
+			multipartStream.once('jpeg', processImage);
+			return;
+		}
 
 		console.error("Saving ...");
 
