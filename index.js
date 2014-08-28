@@ -13,6 +13,8 @@ if (!program.url) {
 
 var multipartStream = new IPCamera.MultipartMjpegDecoderStream();
 
+var cnt = 0;
+
 function processImage(jpeg) {
 	console.error("Receive jpeg: ", jpeg);
 
@@ -24,7 +26,13 @@ function processImage(jpeg) {
 
 		mat.convertGrayscale();
 
-		multipartStream.once('jpeg', processImage);
+		mat.saveAsync('/temp/img' + (cnt++) + '.jpg', function(error) {
+			if (error) {
+				console.error(error);
+			}
+
+			multipartStream.once('jpeg', processImage);
+		});
 	});
 }
 
