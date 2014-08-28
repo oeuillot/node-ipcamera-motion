@@ -1,0 +1,22 @@
+{
+  "name": "node-ipcamera-motion",
+  "version": "0.1.0",
+  "description": "IPCamera motion detector",
+  "main": "index.js",
+  "dependencies": {
+    "commander": "latest",
+    "opencv": "latest"
+ },
+  "scripts": {
+   },
+  "repository": "",
+  "keywords": [
+    "Node.js",
+    "IPCam",
+    "decoder",
+    "motion"
+  ],
+  "author": "Olivier Oeuillot",
+  "license": "BSD",
+  "readmeFilename": "README.md"
+}
