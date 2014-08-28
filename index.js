@@ -15,6 +15,15 @@ var multipartStream = new IPCamera.MultipartMjpegDecoderStream();
 
 var cnt = 0;
 
+var prevFrame;
+var currentFrame;
+var nextFrame;
+
+var d1=new cv.Matrix();
+var d2=new cv.Matrix();
+var motion=new cv.Matrix();
+var kernel_ero = getStructuringElement(MORPH_RECT, Size(2,2));
+
 function processImage(jpeg) {
 	console.error("Receive jpeg: ", jpeg);
 
@@ -24,17 +33,36 @@ function processImage(jpeg) {
 			console.error(err);
 			return;
 		}
-
+		
 		mat.convertGrayscale();
 
+		prevFrame=currentFrame;
+		currentFrame=nextFrame;
+		nextFrame=mat;
+		
+		if (!prevFrame || !currentFrame || !nextFrame) {
+			multipartStream.once('jpeg', processImage);
+			return;
+		}
+		
+		d1.absDiff(prevFrame, nextFrame);
+		d2.absDiff(nextFrame, currentFrame);
+		motion.bitwiseAnd(d1, d2);
+		motion.threshold(35, 255);
+		motion.erode(kernel_ero);
+
+		//var nc=motion.detectMotion()
+		
 		console.error("Saving ...");
 
-		mat.saveAsync('/tmp/img' + (cnt++) + '.jpg', function(error) {
+		motion.saveAsync('/tmp/img' + (cnt++) + '.jpg', function(error) {
 			if (error) {
 				console.error(error);
 			}
 
+			console.error("Motion saved");
 			multipartStream.once('jpeg', processImage);
+		
 		});
 	});
 }
