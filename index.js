@@ -1,9 +1,15 @@
 var IPCamera = require('node-ipcamera');
 var http = require('http');
-
 var cv = require('opencv');
+var program = require('commander');
 
-console.log(IPCamera);
+program.option("-u, --url <url>", "Mjpeg stream URL");
+
+program.parse(process.argv);
+
+if (!program.url) {
+	throw new Error("URL must be specified");
+}
 
 var multipartStream = new IPCamera.MultipartMjpegDecoderStream();
 
@@ -24,7 +30,7 @@ function processImage(jpeg) {
 
 multipartStream.once('jpeg', processImage);
 
-var request = http.request("http://delabarre3.oeuillot.net:8089/mjpeg", function(response) {
+var request = http.request(program.url, function(response) {
 
 	if (response.statusCode != 200) {
 		throw new Error("Invalid status code of response " + response.statusCode);
