@@ -97,7 +97,7 @@ function processImage(jpeg, saved) {
 		var dev = motion.meanStdDev();
 		var stddev = dev.stddev.get(0, 0);
 		console.error("Deviation=", stddev);
-		if (stddev < 10) {
+		if (stddev < 5) {
 			multipartStream.once('jpeg', processImage);
 			return;
 		}
