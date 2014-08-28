@@ -49,56 +49,58 @@ function createPath(basePath, date, prefix, suffix) {
 	var mi = date.getMinutes();
 	var ms = date.getSeconds();
 
-	var py = path.join(basePath, String(date.getFullYear()));
+	var p = path.join(basePath, String(date.getFullYear()));
 	try {
-		fs.statSync(py);
+		fs.statSync(p);
 	} catch (x) {
 		if (x.code === 'ENOENT') {
-			fs.mkdirSync(py);
+			fs.mkdirSync(p);
 		} else {
 			console.log(x);
 			throw x;
 		}
 	}
 
-	var pm = path.join(py, ((mn < 10) ? "0" : "") + mn);
+	p = path.join(p, ((mn < 10) ? "0" : "") + mn);
 	try {
-		fs.statSync(pm);
+		fs.statSync(p);
 	} catch (x) {
 		if (x.code === 'ENOENT') {
-			fs.mkdirSync(pm);
+			fs.mkdirSync(p);
 		} else {
 			console.log(x);
 			throw x;
 		}
 	}
 
-	var pd = path.join(pm, ((md < 10) ? "0" : "") + md);
+	p = path.join(p, ((md < 10) ? "0" : "") + md);
 	try {
-		fs.statSync(pd);
+		fs.statSync(p);
 	} catch (x) {
 		if (x.code === 'ENOENT') {
-			fs.mkdirSync(pd);
+			fs.mkdirSync(p);
 		} else {
 			console.log(x);
 			throw x;
 		}
 	}
 
-	var ph = path.join(pd, ((mh < 10) ? "0" : "") + mh);
-	try {
-		fs.statSync(ph);
-	} catch (x) {
-		if (x.code === 'ENOENT') {
-			fs.mkdirSync(ph);
-		} else {
-			console.log(x);
-			throw x;
+	if (false) {
+		p = path.join(p, ((mh < 10) ? "0" : "") + mh);
+		try {
+			fs.statSync(p);
+		} catch (x) {
+			if (x.code === 'ENOENT') {
+				fs.mkdirSync(p);
+			} else {
+				console.log(x);
+				throw x;
+			}
 		}
 	}
 
-	var p = path.join(ph, prefix + date.getFullYear() + "-" + ((mn < 10) ? "0" : "") + mn + "-" + ((md < 10) ? "0" : "") +
-			md + " " + ((mh < 10) ? "0" : "") + mh + "-" + ((mi < 10) ? "0" : "") + mi + "-" + ((ms < 10) ? "0" : "") + ms +
+	p = path.join(p, prefix + date.getFullYear() + "-" + ((mn < 10) ? "0" : "") + mn + "-" + ((md < 10) ? "0" : "") + md +
+			" " + ((mh < 10) ? "0" : "") + mh + "-" + ((mi < 10) ? "0" : "") + mi + "-" + ((ms < 10) ? "0" : "") + ms +
 			suffix);
 
 	return p;
