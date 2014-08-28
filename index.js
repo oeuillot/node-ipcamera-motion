@@ -23,7 +23,7 @@ if (!program.storePath) {
 
 var multipartStream = new IPCamera.MultipartMjpegDecoderStream();
 
-var stddev = program.detectionLevel || 5;
+var stddevLevel = program.detectionLevel || 5;
 var cnt = 0;
 
 var prevFrame;
@@ -108,7 +108,7 @@ function processImage(jpeg, saved) {
 		var dev = motion.meanStdDev();
 		var stddev = dev.stddev.get(0, 0);
 		console.error("Deviation=", stddev);
-		if (stddev < stddev) {
+		if (stddev < stddevLevel) {
 			multipartStream.once('jpeg', processImage);
 			return;
 		}
