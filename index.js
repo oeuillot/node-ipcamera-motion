@@ -39,22 +39,15 @@ var recordTo = 0;
 var recordStream = 0;
 var maxImages = 0;
 
-function processImage(jpeg, saved) {
+function processImage(jpeg) {
 
 	var now = Date.now();
 
-	if (saved) {
-		// Nothing
+	if (recordStream && recordTo > now) {
 
-	} else if (recordStream && recordTo > now) {
-		console.error("record image");
-		recordStream.writeJpeg(jpeg, function(error) {
-			if (error) {
-				console.error(error);
-			}
+		recordStream.pushJpeg(jpeg);
 
-			processImage(jpeg, true);
-		});
+		processImage(jpeg, true);
 		return;
 
 	} else {
@@ -113,49 +106,39 @@ function processImage(jpeg, saved) {
 			return;
 		}
 
-		recordTo = now + 2000;
+		recordTo = now + 2500;
 
 		console.error("Record to " + recordTo);
 
 		if (recordStream) {
+
+			for (; frames.length;) {
+				recordStream.pushJpeg(frames.shift());
+			}
+
 			multipartStream.once('jpeg', processImage);
 			return;
 		}
 
-		if (!recordStream) {
-			var date = jpeg.date;
-			var mn = date.getMonth() + 1;
-			var md = date.getDate();
-			var mh = date.getHours();
-			var mi = date.getMinutes();
-			var ms = date.getSeconds();
+		var date = jpeg.date;
+		var mn = date.getMonth() + 1;
+		var md = date.getDate();
+		var mh = date.getHours();
+		var mi = date.getMinutes();
+		var ms = date.getSeconds();
 
-			var p = path.join(program.storePath, "Image " + date.getFullYear() + "-" + ((mn < 10) ? "0" : "") + mn + "-" +
-					((md < 10) ? "0" : "") + md + " " + ((mh < 10) ? "0" : "") + mh + "-" + ((mi < 10) ? "0" : "") + mi + "-" +
-					((ms < 10) ? "0" : "") + ms + ".mjpeg");
+		var p = path.join(program.storePath, "Image " + date.getFullYear() + "-" + ((mn < 10) ? "0" : "") + mn + "-" +
+				((md < 10) ? "0" : "") + md + " " + ((mh < 10) ? "0" : "") + mh + "-" + ((mi < 10) ? "0" : "") + mi + "-" +
+				((ms < 10) ? "0" : "") + ms + ".mjpeg");
 
-			var fsStream = fs.createWriteStream(p);
-			recordStream = new IPCamera.MultipartMjpegEncoderStream({}, fsStream);
+		var fsStream = fs.createWriteStream(p);
+		recordStream = new IPCamera.MultipartMjpegEncoderStream({}, fsStream);
+
+		for (; frames.length;) {
+			recordStream.pushJpeg(frames.shift());
 		}
 
-		var imgs = frames;
-		frames = [];
-
-		function writeNext(error) {
-			if (error) {
-				console.error(error);
-				imgs = [];
-			}
-			if (!imgs.length) {
-				multipartStream.once('jpeg', processImage);
-				return;
-			}
-
-			recordStream.writeJpeg(imgs.shift(), writeNext);
-		}
-
-		writeNext();
-
+		multipartStream.once('jpeg', processImage);
 	});
 }
 
