@@ -28,7 +28,7 @@ if (!program.storePath) {
 
 var lastJpegEventEmitter = new Events.EventEmitter();
 
-var motionDetect = new API.MotionDetect({
+var motionDetectEngine = new API.MotionDetectEngine({
 	detectionLevel: program.detectionLevel,
 	thresholdLevel: program.thresholdLevel,
 	erodeIteration: program.erodeIteration,
