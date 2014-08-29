@@ -66,6 +66,12 @@ function openConnection() {
 		}
 	});
 
+	request.on('end', function(e) {
+		multipartStream.destroy();
+
+		setTimeout(openConnection, 1000 * 10);
+	});
+
 	request.end();
 }
 
