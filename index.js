@@ -39,18 +39,34 @@ var motionDetectEngine = new API.MotionDetectEngine({
 	showDeviation: program.showDeviation
 }, lastJpegEventEmitter);
 
-var request = http.request(program.url, function(response) {
-
-	if (response.statusCode !== 200) {
-		throw new Error("Invalid status code of response " + response.statusCode);
-	}
-
+function openConnection() {
 	var multipartStream = new IPCamera.MultipartMjpegDecoderStream();
-	multipartStream.on("jpeg", function(jpeg) {
-		lastJpegEventEmitter.emit("jpeg", jpeg);
+
+	var request = http.request(program.url, function(response) {
+
+		if (response.statusCode !== 200) {
+			throw new Error("Invalid status code of response " + response.statusCode);
+		}
+
+		multipartStream.on("jpeg", function(jpeg) {
+			lastJpegEventEmitter.emit("jpeg", jpeg);
+		});
+
+		response.pipe(multipartStream);
 	});
 
-	response.pipe(multipartStream);
-});
+	request.on('error', function(e) {
+		console.error('problem with request: ' + e.message);
 
-request.end();
+		if (e.code === 'ECONNRESET') {
+			multipartStream.destroy();
+
+			setTimeout(openConnection, 1000 * 10);
+			return;
+		}
+	});
+
+	request.end();
+}
+
+openConnection();
