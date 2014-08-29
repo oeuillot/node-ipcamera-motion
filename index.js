@@ -53,6 +53,14 @@ function openConnection() {
 		});
 
 		response.pipe(multipartStream);
+
+		response.on('end', function(e) {
+			console.log("Get END event !");
+
+			multipartStream.destroy();
+
+			setTimeout(openConnection, 1000 * 10);
+		});
 	});
 
 	request.on('error', function(e) {
@@ -64,14 +72,6 @@ function openConnection() {
 			setTimeout(openConnection, 1000 * 10);
 			return;
 		}
-	});
-
-	request.on('finish', function(e) {
-		console.log("Get END event !");
-
-		multipartStream.destroy();
-
-		setTimeout(openConnection, 1000 * 10);
 	});
 
 	request.end();
