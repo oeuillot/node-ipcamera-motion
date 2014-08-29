@@ -11,7 +11,9 @@ program.option("-d, --detectionLevel <level>", "Detection level", parseFloat);
 
 program.option("-p, --storePath <path>", "Store path");
 
-program.option("--thresholdLevel <0..255>", "Image threshold", parseInt)
+program.option("-s, --detectionFPS <fps>", "Detection fps");
+
+program.option("--thresholdLevel <0..255>", "Image threshold", parseInt);
 
 program.parse(process.argv);
 
@@ -32,6 +34,10 @@ var erodeIteration = 2;
 var prevFrame;
 var currentFrame;
 var nextFrame;
+
+var firstImageDate = 0;
+var imageIndex = 0;
+var imageDelayMs = Math.floor(1000 / (program.detectionFPS || 25));
 
 var d1 = new cv.Matrix();
 var d2 = new cv.Matrix();
@@ -138,6 +144,16 @@ function processImage(jpeg) {
 		console.error(maxImages + " images in memory");
 	}
 
+	if (firstImageDate + imageIndex * imageDelayMs > now) {
+		imageIndex++;
+		console.error("Skip frame");
+
+		multipartStream.once('jpeg', processImage);
+		return;
+	}
+	imageIndex++;
+	console.error("Process frame");
+
 	cv.readImage(jpeg.data, function(err, mat) {
 		if (err) {
 			console.error(err);
@@ -171,8 +187,6 @@ function processImage(jpeg) {
 
 		recordTo = now + 2500;
 
-		console.error("Record to " + recordTo + "  stream=" + recordStream);
-
 		if (recordStream) {
 			for (; frames.length;) {
 				recordStream.pushJpeg(frames.shift());
@@ -203,6 +217,7 @@ var request = http.request(program.url, function(response) {
 		throw new Error("Invalid status code of response " + response.statusCode);
 	}
 
+	firstImageDate = Date.now();
 	response.pipe(multipartStream);
 });
 
