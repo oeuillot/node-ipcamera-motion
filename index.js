@@ -181,11 +181,15 @@ function processImage(jpeg) {
 		var dev = motion.meanStdDev();
 		var stddev = dev.stddev.get(0, 0);
 		if (program.showDeviation) {
-			process.stdout.write("Deviation=" + stddev + "              \r");
+			var dsl = new Date();
+			process.stdout.write(dsl.toISOString() + " Deviation=" + stddev + "              \r");
 		}
 		if (stddev < stddevLevel) {
 			multipartStream.once('jpeg', processImage);
 			return;
+		}
+		if (program.showDeviation) {
+			process.stdout.write("\n");
 		}
 
 		recordTo = now + 2500;
