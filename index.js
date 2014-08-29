@@ -145,13 +145,13 @@ function processImage(jpeg) {
 	}
 
 	if (firstImageDate + imageIndex * imageDelayMs > now) {
-		console.error("Skip frame");
+//		console.error("Skip frame");
 
 		multipartStream.once('jpeg', processImage);
 		return;
 	}
 	imageIndex++;
-	console.error("Process frame");
+//	console.error("Process frame");
 
 	cv.readImage(jpeg.data, function(err, mat) {
 		if (err) {
