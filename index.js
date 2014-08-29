@@ -181,7 +181,7 @@ function processImage(jpeg) {
 		var dev = motion.meanStdDev();
 		var stddev = dev.stddev.get(0, 0);
 		if (program.showDeviation) {
-			process.stdout.write("Deviation=" + stddev + "\r");
+			process.stdout.write("Deviation=" + stddev + "              \r");
 		}
 		if (stddev < stddevLevel) {
 			multipartStream.once('jpeg', processImage);
