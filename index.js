@@ -145,7 +145,6 @@ function processImage(jpeg) {
 	}
 
 	if (firstImageDate + imageIndex * imageDelayMs > now) {
-		imageIndex++;
 		console.error("Skip frame");
 
 		multipartStream.once('jpeg', processImage);
