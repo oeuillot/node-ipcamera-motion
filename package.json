@@ -2,7 +2,7 @@
   "name": "node-ipcamera-motion",
   "version": "0.1.0",
   "description": "IPCamera motion detector",
-  "main": "index.js",
+  "main": "./lib/API.js",
   "dependencies": {
     "commander": "latest",
     "opencv": "latest"
