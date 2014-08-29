@@ -6,15 +6,15 @@ var Events = require('events');
 
 program.option("-u, --url <url>", "Mjpeg stream URL");
 
-program.option("-d, --detectionLevel <level>", "Detection level", parseFloat);
+program.option("--detectionLevel <level>", "Detection level", parseFloat);
 
-program.option("-p, --storePath <path>", "Store path");
+program.option("--storePath <path>", "Store path");
 
-program.option("-s, --detectionFPS <fps>", "Detection fps");
+program.option("--detectionFPS <fps>", "Set detection fps");
 
-program.option("--thresholdLevel <0..255>", "Image threshold", parseInt);
+program.option("--thresholdLevel <0..255>", "Set image threshold level", parseInt);
 
-program.option("--showDeviation", "Log deviation");
+program.option("--showDeviation", "Enable deviation value log");
 
 program.parse(process.argv);
 
@@ -28,7 +28,7 @@ if (!program.storePath) {
 
 var lastJpegEventEmitter = new Events.EventEmitter();
 
-var motionDetectEngine = new API.MotionDetectEngine({
+var motionDetector = new API.MotionDetector({
 	detectionLevel: program.detectionLevel,
 	thresholdLevel: program.thresholdLevel,
 	erodeIteration: program.erodeIteration,
@@ -55,7 +55,7 @@ function openConnection() {
 		response.pipe(multipartStream);
 
 		response.on('end', function(e) {
-			console.log("Get END event !");
+			console.log("End of request response ! Try to reconnect ...");
 
 			multipartStream.destroy();
 
@@ -64,11 +64,11 @@ function openConnection() {
 	});
 
 	request.on('error', function(e) {
-		console.error('problem with request: ' + e.message);
+		console.error('Problem with request: ' + e.message);
+
+		multipartStream.destroy();
 
 		if (e.code === 'ECONNRESET') {
-			multipartStream.destroy();
-
 			setTimeout(openConnection, 1000 * 10);
 			return;
 		}
