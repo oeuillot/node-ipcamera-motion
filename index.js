@@ -15,6 +15,8 @@ program.option("-s, --detectionFPS <fps>", "Detection fps");
 
 program.option("--thresholdLevel <0..255>", "Image threshold", parseInt);
 
+program.option("--showDeviation", "Log deviation");
+
 program.parse(process.argv);
 
 if (!program.url) {
@@ -145,13 +147,13 @@ function processImage(jpeg) {
 	}
 
 	if (firstImageDate + imageIndex * imageDelayMs > now) {
-//		console.error("Skip frame");
+		// console.error("Skip frame");
 
 		multipartStream.once('jpeg', processImage);
 		return;
 	}
 	imageIndex++;
-//	console.error("Process frame");
+	// console.error("Process frame");
 
 	cv.readImage(jpeg.data, function(err, mat) {
 		if (err) {
@@ -178,7 +180,9 @@ function processImage(jpeg) {
 
 		var dev = motion.meanStdDev();
 		var stddev = dev.stddev.get(0, 0);
-		// console.error("Deviation=", stddev);
+		if (program.showDeviation) {
+			process.stdout.write("Deviation=" + stddev + "\r");
+		}
 		if (stddev < stddevLevel) {
 			multipartStream.once('jpeg', processImage);
 			return;
