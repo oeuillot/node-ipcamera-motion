@@ -66,7 +66,9 @@ function openConnection() {
 		}
 	});
 
-	request.on('end', function(e) {
+	request.on('finish', function(e) {
+		console.log("Get END event !");
+
 		multipartStream.destroy();
 
 		setTimeout(openConnection, 1000 * 10);
