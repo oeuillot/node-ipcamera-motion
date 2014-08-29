@@ -28,7 +28,16 @@ if (!program.storePath) {
 
 var lastJpegEventEmitter = new Events.EventEmitter();
 
-var motionDetect = new API.MotionDetect(lastJpegEventEmitter);
+var motionDetect = new API.MotionDetect({
+	detectionLevel: program.detectionLevel,
+	thresholdLevel: program.thresholdLevel,
+	erodeIteration: program.erodeIteration,
+	detectionFPS: program.detectionFPS,
+	basePath: program.storePath,
+	mjpegPrefix: program.mjpegPrefix,
+	mjpegSuffix: program.mjpegSuffix,
+	showDeviation: program.showDeviation
+}, lastJpegEventEmitter);
 
 var request = http.request(program.url, function(response) {
 
