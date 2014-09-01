@@ -192,6 +192,8 @@ function scan(directory, callback) {
 					if (!properties) {
 						return scanner.close(callback);
 					}
+					
+					console.log("Add image ");
 
 					filesTree.insert(properties);
 
