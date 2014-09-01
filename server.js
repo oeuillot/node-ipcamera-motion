@@ -181,8 +181,10 @@ function scan(directory, callback) {
 
 		console.log(files.length + " detected files");
 
+		var cnt = 0;
 		Async.eachLimit(files, 4, function(item, callback) {
 			var scanner = new MjpegScanner(item);
+			cnt++;
 
 			function nextFrame() {
 				scanner.nextFrameInfos(function(error, properties) {
@@ -192,8 +194,8 @@ function scan(directory, callback) {
 					if (!properties) {
 						return scanner.close(callback);
 					}
-					
-					console.log("Add image ");
+
+					console.log("Add image " + filesTree.size + " " + cnt + "/" + files.length);
 
 					filesTree.insert(properties);
 
@@ -228,7 +230,7 @@ function listDirectoryContents(rootPath, path, list, callback) {
 				if (stats.isDirectory()) {
 					return listDirectoryContents(rootPath, p, list, callback);
 				}
-				
+
 				if (stats.isFile()) {
 					if (p.match(/\.mjpeg$/g)) {
 						list.push(p);
