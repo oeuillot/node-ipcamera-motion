@@ -5,7 +5,10 @@
   "main": "./lib/API.js",
   "dependencies": {
     "commander": "latest",
-    "opencv": "latest"
+    "opencv": "latest",
+    "async": "latest",
+    "express": "latest",
+    "bintrees": "latest"
  },
   "scripts": {
    },
