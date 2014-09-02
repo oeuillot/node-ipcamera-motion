@@ -5,7 +5,7 @@ var MoviesRepository = require('./lib/moviesRepository');
 
 var NO_CACHE_CONTROL = "no-cache, private, no-store, must-revalidate, max-stale=0, max-age=1,post-check=0, pre-check=0";
 
-var MAX_SIZE = 128;
+var MAX_SIZE = 512;
 
 program.option("--httpPort <port>", "HttpPort", parseInt);
 
