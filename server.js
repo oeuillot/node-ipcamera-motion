@@ -1,10 +1,7 @@
 var express = require('express');
 var program = require('commander');
-var Async = require('async');
 var fs = require('fs');
-var Path = require('path');
-var MjpegScanner = require('./lib/mjpegScanner');
-var RBTree = require('bintrees').RBTree;
+var MoviesRepository = require('./lib/moviesRepository');
 
 var NO_CACHE_CONTROL = "no-cache, private, no-store, must-revalidate, max-stale=0, max-age=1,post-check=0, pre-check=0";
 
@@ -19,11 +16,12 @@ program.parse(process.argv);
 if (!program.storePath) {
 	throw new Error("storePath parameter must be specified");
 }
-var app = express();
 
-var filesTree = new RBTree(function(img1, img2) {
-	return img1.imageDate - img2.imageDate;
+var moviesRepository = new MoviesRepository({
+	path: program.storePath
 });
+
+var app = express();
 
 app.get("/get/:date", function(req, res) {
 
@@ -38,10 +36,7 @@ app.get("/get/:date", function(req, res) {
 	}
 
 	date = new Date(date);
-
-	var image = filesTree.find({
-		imageDate: date.getTime()
-	});
+	var image = moviesRepository.getImage(date);
 	if (!image) {
 		res.status(404).send("Invalid image not found");
 		return;
@@ -128,133 +123,58 @@ app.get("/from/:from", function(req, res) {
 		step = parseInt(step, 10);
 	}
 
-	res.writeHead(200, {
-		'Content-Type': 'application/json',
-		'Cache-Control': NO_CACHE_CONTROL
-	});
-
 	if (fromDate.indexOf('T') < 0) {
 		fromDate = parseInt(fromDate, 10);
 	}
 
 	var from = new Date(fromDate);
 
-	var iter = filesTree.upperBound({
-		imageDate: from.getTime() - 1
+	moviesRepository.listImages(from, function(error, iter) {
+		if (error) {
+			console.error(error);
+			res.status(500);
+			return;
+		}
+
+		res.writeHead(200, {
+			'Content-Type': 'application/json',
+			'Cache-Control': NO_CACHE_CONTROL
+		});
+
+		res.write('{"start":"' + from.toISOString() + '","dates":[');
+
+		var lastImage;
+
+		iter.next(function sendImage(error, next) {
+			if (error) {
+				console.error(error);
+				res.end();
+				return;
+			}
+
+			if (!next) {
+				res.end(']}');
+				return;
+			}
+
+			if (!step || !lastImage || (lastImage.imageDate + step > next.imageDate)) {
+				if (!lastImage) {
+					res.write('\"' + (new Date(next.imageDate)).toISOString() + '\"');
+				} else {
+					res.write(',\"' + (new Date(next.imageDate)).toISOString() + '\"');
+				}
+
+				lastImage = next;
+
+				size--;
+				if (!size) {
+					res.end(']}');
+					return;
+				}
+			}
+			iter.next(sendImage);
+		});
 	});
-
-	res.write('{"start":"' + from.toISOString() + '","dates":[');
-
-	var lastImage;
-	for (; size > 0;) {
-		var next = iter.next();
-		if (!next) {
-			break;
-		}
-
-		if (step && lastImage && lastImage.imageDate + step > next.imageDate) {
-			continue;
-		}
-
-		if (!lastImage) {
-			res.write('\"' + (new Date(next.imageDate)).toISOString() + '\"');
-		} else {
-			res.write(',\"' + (new Date(next.imageDate)).toISOString() + '\"');
-		}
-
-		lastImage = next;
-
-		size--;
-	}
-
-	res.end(']}');
 });
 
 app.listen(program.httpPort || 8080);
-
-function scan(directory, callback) {
-
-	listDirectoryContents(directory, directory, [], function(error, files) {
-		if (error) {
-			return callback(error);
-		}
-
-		console.log(files.length + " detected files");
-
-		var cnt = 0;
-		Async.eachLimit(files, 4, function(item, callback) {
-			var scanner = new MjpegScanner(item);
-			cnt++;
-
-			function nextFrame() {
-				scanner.nextFrameInfos(function(error, properties) {
-					if (error) {
-						return callback(error);
-					}
-					if (!properties) {
-						return scanner.close(callback);
-					}
-
-					console.log("Add image " + filesTree.size + " " + cnt + "/" + files.length);
-
-					filesTree.insert(properties);
-
-					setImmediate(nextFrame);
-				});
-			}
-
-			nextFrame();
-
-		}, function(error) {
-			if (error) {
-				return callback(error);
-			}
-
-			console.log(filesTree.size + " referenced images.");
-		});
-	});
-}
-
-function listDirectoryContents(rootPath, path, list, callback) {
-
-	fs.readdir(path, function(error, files) {
-		Async.each(files, function(file, callback) {
-			var p = Path.join(path, file);
-
-			fs.lstat(p, function(error, stats) {
-				if (error) {
-					console.error("LStat " + p + " error", error);
-					return callback(error);
-				}
-
-				if (stats.isDirectory()) {
-					return listDirectoryContents(rootPath, p, list, callback);
-				}
-
-				if (stats.isFile()) {
-					if (p.match(/\.mjpeg$/g)) {
-						list.push(p);
-					}
-				}
-
-				return callback();
-			});
-
-		}, function(error) {
-			if (error) {
-				return callback(error);
-			}
-
-			return callback(null, list);
-		});
-	});
-}
-
-if (program.storePath) {
-	scan(program.storePath, function(error) {
-		if (error) {
-			console.error("Scan error ", error);
-			return;
-		}
-	});
-}
