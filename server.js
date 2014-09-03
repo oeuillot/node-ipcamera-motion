@@ -6,6 +6,7 @@ var MoviesRepository = require('./lib/moviesRepository');
 var NO_CACHE_CONTROL = "no-cache, private, no-store, must-revalidate, max-stale=0, max-age=1,post-check=0, pre-check=0";
 
 var MAX_SIZE = 512;
+var LAST_MOVIES_MAX_SIZE = 64;
 
 program.option("--httpPort <port>", "HttpPort", parseInt);
 
@@ -36,13 +37,7 @@ app.get("/get/:date", function(req, res) {
 	}
 
 	date = new Date(date);
-	var image = moviesRepository.getImage(date);
-	if (!image) {
-		res.status(404).send("Invalid image not found");
-		return;
-	}
-
-	fs.open(image.path, "r", function(error, fd) {
+	var image = moviesRepository.getImage(date, function(error, image) {
 		if (error) {
 			console.error(error);
 
@@ -50,34 +45,31 @@ app.get("/get/:date", function(req, res) {
 			return;
 		}
 
-		res.writeHead(200, {
-			'Content-Type': 'image/jpeg',
-			'Content-Length': String(image.bodyLength),
-			'X-Image-Date': (new Date(image.imageDate)).toISOString()
-		});
+		if (!image) {
+			res.status(404).send("Invalid image not found");
+			return;
+		}
 
-		var buf = new Buffer(1024 * 16);
-		var pos = image.bodyOffset;
-		var size = image.bodyLength;
+		fs.open(image.path, "r", function(error, fd) {
+			if (error) {
+				console.error(error);
 
-		function writeBuf() {
-			fs.read(fd, buf, 0, Math.min(buf.length, size), pos, function(error, byteRead) {
-				if (error) {
-					console.error(error);
+				res.status(505);
+				return;
+			}
 
-					res.end();
-					fs.close(fd);
-					return;
-				}
+			res.writeHead(200, {
+				'Content-Type': 'image/jpeg',
+				'Content-Length': String(image.bodyLength),
+				'X-Image-Date': (new Date(image.imageDate)).toISOString()
+			});
 
-				// console.log("Read " + byteRead + " bytes");
+			var buf = new Buffer(1024 * 16);
+			var pos = image.bodyOffset;
+			var size = image.bodyLength;
 
-				var buf2 = buf;
-				if (byteRead !== buf.length) {
-					buf2 = buf.slice(0, byteRead);
-				}
-
-				res.write(buf2, function(error) {
+			function writeBuf() {
+				fs.read(fd, buf, 0, Math.min(buf.length, size), pos, function(error, byteRead) {
 					if (error) {
 						console.error(error);
 
@@ -86,25 +78,41 @@ app.get("/get/:date", function(req, res) {
 						return;
 					}
 
-					// console.log("Write " + byteRead + " bytes");
+					// console.log("Read " + byteRead + " bytes");
 
-					pos += byteRead;
-					size -= byteRead;
-
-					if (size <= 0) {
-						res.end();
-						fs.close(fd);
-						return;
+					var buf2 = buf;
+					if (byteRead !== buf.length) {
+						buf2 = buf.slice(0, byteRead);
 					}
 
-					writeBuf();
+					res.write(buf2, function(error) {
+						if (error) {
+							console.error(error);
+
+							res.end();
+							fs.close(fd);
+							return;
+						}
+
+						// console.log("Write " + byteRead + " bytes");
+
+						pos += byteRead;
+						size -= byteRead;
+
+						if (size <= 0) {
+							res.end();
+							fs.close(fd);
+							return;
+						}
+
+						writeBuf();
+					});
 				});
-			});
-		}
+			}
 
-		writeBuf();
+			writeBuf();
+		});
 	});
-
 });
 
 function returnList(from, req, res, writeItemFunc) {
@@ -202,6 +210,28 @@ app.get("/movies/:from", function(req, res) {
 	var from = new Date(fromDate);
 
 	moviesRepository.listMovies(from, returnList(from, req, res, function(item, first) {
+
+		var str = '{"start":"' + (new Date(item.imageDate)).toISOString() + '","end":"' +
+				(new Date(item.frames[item.frames.length - 1])).toISOString() + '","frames":' + item.frames.length + '}';
+		if (first) {
+			res.write(str);
+			return;
+		}
+
+		res.write(',' + str);
+	}));
+});
+
+app.get("/lastMovies", function(req, res) {
+	var size = req.query.size || LAST_MOVIES_MAX_SIZE;
+	if (size <= 0 || !size || size > LAST_MOVIES_MAX_SIZE) {
+		size = LAST_MOVIES_MAX_SIZE;
+	}
+
+	var from = new Date();
+	moviesRepository.lastMovies(size, returnList(from, req, res, function(item, first) {
+
+		// console.error(item);
 
 		var str = '{"start":"' + (new Date(item.imageDate)).toISOString() + '","end":"' +
 				(new Date(item.frames[item.frames.length - 1])).toISOString() + '","frames":' + item.frames.length + '}';
