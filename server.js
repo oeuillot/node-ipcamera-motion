@@ -107,13 +107,7 @@ app.get("/get/:date", function(req, res) {
 
 });
 
-app.get("/from/:from", function(req, res) {
-
-	var fromDate = req.params.from;
-	if (!fromDate) {
-		res.status(404).send("Invalid from parameter");
-		return;
-	}
+function returnList(from, req, res, writeItemFunc) {
 	var size = req.query.size || MAX_SIZE;
 	if (size <= 0 || !size || size > MAX_SIZE) {
 		size = MAX_SIZE;
@@ -123,13 +117,7 @@ app.get("/from/:from", function(req, res) {
 		step = parseInt(step, 10);
 	}
 
-	if (fromDate.indexOf('T') < 0) {
-		fromDate = parseInt(fromDate, 10);
-	}
-
-	var from = new Date(fromDate);
-
-	moviesRepository.listImages(from, function(error, iter) {
+	return function(error, iter) {
 		if (error) {
 			console.error(error);
 			res.status(500);
@@ -141,7 +129,7 @@ app.get("/from/:from", function(req, res) {
 			'Cache-Control': NO_CACHE_CONTROL
 		});
 
-		res.write('{"start":"' + from.toISOString() + '","dates":[');
+		res.write('{"from":"' + from.toISOString() + '","dates":[');
 
 		var lastImage;
 
@@ -158,11 +146,7 @@ app.get("/from/:from", function(req, res) {
 			}
 
 			if (!step || !lastImage || (lastImage.imageDate + step > next.imageDate)) {
-				if (!lastImage) {
-					res.write('\"' + (new Date(next.imageDate)).toISOString() + '\"');
-				} else {
-					res.write(',\"' + (new Date(next.imageDate)).toISOString() + '\"');
-				}
+				writeItemFunc(next, !lastImage);
 
 				lastImage = next;
 
@@ -174,7 +158,60 @@ app.get("/from/:from", function(req, res) {
 			}
 			iter.next(sendImage);
 		});
-	});
+	};
+}
+
+app.get("/from/:from", function(req, res) {
+
+	var fromDate = req.params.from;
+	if (!fromDate) {
+		res.status(404).send("Invalid from parameter");
+		return;
+	}
+
+	if (fromDate.indexOf('T') < 0) {
+		fromDate = parseInt(fromDate, 10);
+	}
+
+	var from = new Date(fromDate);
+
+	moviesRepository.listImages(from, returnList(from, req, res, function(item, first) {
+
+		var str = '\"' + (new Date(item.imageDate)).toISOString() + '\"';
+		if (first) {
+			res.write(str);
+			return;
+		}
+
+		res.write(',' + str);
+	}));
+});
+
+app.get("/movies/:from", function(req, res) {
+
+	var fromDate = req.params.from;
+	if (!fromDate) {
+		res.status(404).send("Invalid from parameter");
+		return;
+	}
+
+	if (fromDate.indexOf('T') < 0) {
+		fromDate = parseInt(fromDate, 10);
+	}
+
+	var from = new Date(fromDate);
+
+	moviesRepository.listMovies(from, returnList(from, req, res, function(item, first) {
+
+		var str = '{"start":"' + (new Date(item.imageDate)).toISOString() + '","end":"' +
+				(new Date(item.frames[item.frames.length - 1])).toISOString() + '","frames":' + item.frames.length + '}';
+		if (first) {
+			res.write(str);
+			return;
+		}
+
+		res.write(',' + str);
+	}));
 });
 
 app.listen(program.httpPort || 8080);
