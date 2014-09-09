@@ -16,7 +16,7 @@ app.controller('MoviesCtrl', [ '$scope', '$http', '$timeout', function MoviesCtr
 		}).success(function(data, status) {
 			if (data.dates) {
 				if (!$scope.movies[0] || !data.dates || $scope.movies[0].start !== data.dates[0].start) {
-					$scope.movies = data.dates;
+					$scope.movies = data.dates || [];
 				}
 			}
 
@@ -25,7 +25,7 @@ app.controller('MoviesCtrl', [ '$scope', '$http', '$timeout', function MoviesCtr
 
 	};
 
-	function nextImage(div, movie, current, frames) {
+	function nextImage(div, movie, current, frames, force) {
 
 		if (!movie.loading) {
 			loadImg(div, "/get/" + (new Date(movie.start)).toISOString());
@@ -78,15 +78,23 @@ app.controller('MoviesCtrl', [ '$scope', '$http', '$timeout', function MoviesCtr
 
 		// console.log("dt=" + dt);
 
+		if (!force && dt < 0) {
+//			console.log("SKIP !");
+			$timeout(nextImage.bind($scope, div, movie, +date, frames, true), 0, false);
+			return;
+		}
 		if (dt <= 10) {
-			loadImg(div, "/get/" + date.toISOString());
-			$timeout(nextImage.bind($scope, div, movie, +date, frames), 20, false);
+			loadImg(div, "/get/" + date.toISOString(), function() {
+				$timeout(nextImage.bind($scope, div, movie, +date, frames), 0, false);
+			});
+
 			return;
 		}
 
 		$timeout(function() {
-			loadImg(div, "/get/" + date.toISOString());
-			$timeout(nextImage.bind($scope, div, movie, +date, frames), 20, false);
+			loadImg(div, "/get/" + date.toISOString(), function() {
+				$timeout(nextImage.bind($scope, div, movie, +date, frames), 0, false);
+			});
 		}, dt, false);
 	}
 
@@ -113,16 +121,10 @@ app.controller('MoviesCtrl', [ '$scope', '$http', '$timeout', function MoviesCtr
 		// console.log("Start=" + $scope.showStart + " Running=" +
 		// $scope.movieRunning + " MStart=" + $scope.movieStart);
 
-		$scope.timeoutPromise = $timeout(nextImage.bind($scope, div, movie, $scope.movieStart, []), 20, false);
+		$scope.timeoutPromise = $timeout(nextImage.bind($scope, div, movie, $scope.movieStart, [], true), 20, false);
 	};
 
-	function loadImg(div, src) {
-		if (div.loadingImage) {
-			div.loadingNextImage = src;
-			return;
-		}
-		div.loadingImage = true;
-		div.loadingNextImage = null;
+	function loadImg(div, src, callback) {
 
 		var old = div._lastImage;
 		if (!old) {
@@ -154,13 +156,10 @@ app.controller('MoviesCtrl', [ '$scope', '$http', '$timeout', function MoviesCtr
 					is.position = "static";
 				}, 20);
 			}
-			var next = div.loadingNextImage;
-			if (next) {
-				div.loadingNextImage = null;
 
-				loadImg(div, next);
+			if (callback) {
+				return callback(null);
 			}
-
 		};
 		div.insertBefore(img, div.firstChild);
 	}
@@ -180,7 +179,7 @@ app.filter('dateFormat', function() {
 			return "Maintenant";
 		}
 
-		diff = Math.floor(diff / 1000 * 60);
+		diff = Math.floor(diff / (1000 * 60));
 
 		if (diff < 60) {
 			return diff + " mn";
@@ -194,7 +193,7 @@ app.filter('dateFormat', function() {
 		}
 
 		if (diff < 60 * 24 * 7) {
-			return DAYS[d.getDay()] + ((hr < 10) ? "0" : "") + hr + ":" + ((mn < 10) ? "0" : "") + mn;
+			return DAYS[d.getDay()] + " " + ((hr < 10) ? "0" : "") + hr + ":" + ((mn < 10) ? "0" : "") + mn;
 		}
 
 		var dt = d.getDate();
