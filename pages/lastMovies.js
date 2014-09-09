@@ -15,7 +15,9 @@ app.controller('MoviesCtrl', [ '$scope', '$http', '$timeout', function MoviesCtr
 
 		}).success(function(data, status) {
 			if (data.dates) {
-				$scope.movies = data.dates;
+				if (!$scope.movies[0] || !data.dates || $scope.movies[0].start !== data.dates[0].start) {
+					$scope.movies = data.dates;
+				}
 			}
 
 			$timeout($scope.loadMovies, 1000 * 30);
