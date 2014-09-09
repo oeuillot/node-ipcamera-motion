@@ -10,7 +10,7 @@ app.controller('MoviesCtrl', [ '$scope', '$http', '$timeout', function MoviesCtr
 
 	$scope.loadMovies = function() {
 		var httpRequest = $http({
-			url: '/lastMovies'
+			url: '/lastMovies?size=16'
 
 		}).success(function(data, status) {
 			if (data.dates) {
@@ -218,5 +218,15 @@ app.filter('runtime', function() {
 		}
 
 		return mn;
+	};
+});
+
+app.filter('add2Seconds', function() {
+	return function(date) {
+		var d = new Date(date);
+
+		d.setSeconds(d.getSeconds() + 2);
+
+		return d.toISOString();
 	};
 });

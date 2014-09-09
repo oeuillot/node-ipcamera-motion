@@ -19,7 +19,7 @@
 					style="padding-left: 16px">Durée: {{movie | runtime}}</span>
 			</div>
 			<a class="movieLink" ng-click="showMovie($event, movie)"><img
-				ng-src="get/{{movie.start}}" class="movieImage">
+				ng-src="get/{{movie.start | add2Seconds}}" class="movieImage">
 
 				<div class="movieLoading" ng-show="movie.loading">LECTURE {{movie.loadingStage}}%</div> </a>
 		</div>
