@@ -6,6 +6,7 @@ app.controller('MoviesCtrl', [ '$scope', '$http', '$timeout', function MoviesCtr
 
 	$scope.init = function() {
 		$scope.loadMovies();
+
 	};
 
 	$scope.loadMovies = function() {
@@ -16,6 +17,8 @@ app.controller('MoviesCtrl', [ '$scope', '$http', '$timeout', function MoviesCtr
 			if (data.dates) {
 				$scope.movies = data.dates;
 			}
+
+			$timeout($scope.loadMovies, 1000 * 30);
 		});
 
 	};
