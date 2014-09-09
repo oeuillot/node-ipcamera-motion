@@ -186,15 +186,15 @@ app.filter('dateFormat', function() {
 			return diff + " mn";
 		}
 
-		if (diff < 60 * 24) {
-			var hr = d.getHours();
-			var mn = d.getMinutes();
+		var hr = d.getHours();
+		var mn = d.getMinutes();
 
+		if (diff < 60 * 24) {
 			return ((hr < 10) ? "0" : "") + hr + ":" + ((mn < 10) ? "0" : "") + mn;
 		}
 
 		if (diff < 60 * 24 * 7) {
-			return DAYS[d.getDay()];
+			return DAYS[d.getDay()] + ((hr < 10) ? "0" : "") + hr + ":" + ((mn < 10) ? "0" : "") + mn;
 		}
 
 		var dt = d.getDate();
