@@ -1,0 +1,18 @@
+.movie {
+	margin-bottom: 24px;
+}
+
+.movieImage {
+	width: 100%;
+	height: auto;
+}
+
+.movieLink {
+	display: block;
+	position: relative;
+}
+
+BODY {
+	margin: 0;
+	padding: 0;
+}

@@ -244,4 +244,6 @@ app.get("/lastMovies", function(req, res) {
 	}));
 });
 
+app.use(express.static(__dirname + '/pages'));
+
 app.listen(program.httpPort || 8080);
