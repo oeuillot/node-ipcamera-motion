@@ -12,6 +12,17 @@
 	position: relative;
 }
 
+.movieLoading {
+	display: absolute;
+	right: 0;
+	top: 0;
+	opacity: 0.70;
+	background: black;
+	color: white;
+	padding: 8px;
+	position: absolute;
+}
+
 BODY {
 	margin: 0;
 	padding: 0;

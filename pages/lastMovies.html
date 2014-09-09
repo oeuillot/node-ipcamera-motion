@@ -1,7 +1,7 @@
 <html>
 <head>
 <title>Last movies</title>
-<meta name="viewport" content="initial-scale=1, user-scalable=no" />
+<meta name="NO-viewport" content="initial-scale=1, user-scalable=no" />
 <meta name="apple-touch-fullscreen" content="yes" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="white" />
@@ -19,7 +19,9 @@
 					style="padding-left: 16px">Durée: {{movie | runtime}}</span>
 			</div>
 			<a class="movieLink" ng-click="showMovie($event, movie)"><img
-				ng-src="get/{{movie.start}}" class="movieImage"></a>
+				ng-src="get/{{movie.start}}" class="movieImage">
+
+				<div class="movieLoading" ng-show="movie.loading">LECTURE {{movie.loadingStage}}%</div> </a>
 		</div>
 	</div>
 

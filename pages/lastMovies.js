@@ -20,7 +20,13 @@ app.controller('MoviesCtrl', [ '$scope', '$http', '$timeout', function MoviesCtr
 
 	};
 
-	function nextImage(div, current, frames) {
+	function nextImage(div, movie, current, frames) {
+
+		if (!movie.loading) {
+			loadImg(div, "/get/" + (new Date(movie.start)).toISOString());
+			$scope.$digest();
+			return;
+		}
 
 		if (!frames.length) {
 			$http({
@@ -30,12 +36,14 @@ app.controller('MoviesCtrl', [ '$scope', '$http', '$timeout', function MoviesCtr
 				if (data && data.dates && data.dates.length) {
 					frames.push.apply(frames, data.dates);
 
-					nextImage(div, current, frames);
+					$timeout(nextImage.bind($scope, div, movie, current, frames), 0, false);
 					return;
 				}
 
-				console.log("No more images");
+				// console.log("No more images");
 
+				movie.loading = false;
+				loadImg(div, "/get/" + (new Date(movie.start)).toISOString());
 			});
 
 			return;
@@ -43,26 +51,37 @@ app.controller('MoviesCtrl', [ '$scope', '$http', '$timeout', function MoviesCtr
 
 		var date = new Date(frames.shift());
 
-		console.log("Date=" + date);
+		// console.log("Date=" + date);
 
 		if (date.getTime() - $scope.movieStart > $scope.movieRunning) {
-			console.log("END");
+			// console.log("END");
+			movie.loading = false;
+			$scope.$digest();
+
+			loadImg(div, "/get/" + (new Date($scope.currentMovie.start)).toISOString());
 			return;
+		}
+
+		var newLoadingStage = Math.floor((date.getTime() - $scope.movieStart) / $scope.movieRunning * 100);
+		if (Math.floor(movie.loadingStage) < Math.floor(newLoadingStage)) {
+			$scope.$apply(function() {
+				movie.loadingStage = Math.floor((date.getTime() - $scope.movieStart) / $scope.movieRunning * 100);
+			});
 		}
 
 		var dt = date.getTime() - $scope.movieStart + $scope.showStart - Date.now();
 
-		console.log("dt=" + dt);
+		// console.log("dt=" + dt);
 
 		if (dt <= 10) {
 			loadImg(div, "/get/" + date.toISOString());
-			$timeout(nextImage.bind($scope, div, +date, frames), 20, false);
+			$timeout(nextImage.bind($scope, div, movie, +date, frames), 20, false);
 			return;
 		}
 
 		$timeout(function() {
 			loadImg(div, "/get/" + date.toISOString());
-			$timeout(nextImage.bind($scope, div, +date, frames), 20, false);
+			$timeout(nextImage.bind($scope, div, movie, +date, frames), 20, false);
 		}, dt, false);
 	}
 
@@ -75,46 +94,70 @@ app.controller('MoviesCtrl', [ '$scope', '$http', '$timeout', function MoviesCtr
 			$timeout.cancel(timeoutPromise);
 		}
 
+		if ($scope.currentMovie) {
+			$scope.currentMovie.loading = false;
+		}
+
 		$scope.showStart = Date.now();
 		$scope.movieRunning = +new Date(movie.end) - new Date(movie.start);
 		$scope.movieStart = +new Date(movie.start);
+		$scope.currentMovie = movie;
+		movie.loading = true;
+		movie.loadingStage = 0;
 
-		console.log("Start=" + $scope.showStart + " Running=" + $scope.movieRunning + " MStart=" + $scope.movieStart);
+		// console.log("Start=" + $scope.showStart + " Running=" +
+		// $scope.movieRunning + " MStart=" + $scope.movieStart);
 
-		$scope.timeoutPromise = $timeout(nextImage.bind($scope, div, $scope.movieStart, []), 20, false);
+		$scope.timeoutPromise = $timeout(nextImage.bind($scope, div, movie, $scope.movieStart, []), 20, false);
 	};
 
 	function loadImg(div, src) {
 		if (div.loadingImage) {
-			div.loadingImage = src;
+			div.loadingNextImage = src;
 			return;
 		}
-		div.loadingImage = src;
+		div.loadingImage = true;
+		div.loadingNextImage = null;
+
+		var old = div._lastImage;
+		if (!old) {
+			old = div.querySelector("IMG");
+		}
 
 		var img = div.ownerDocument.createElement("IMG");
+		div._lastImage = img;
+
 		var is = img.style;
 		is.border = "0";
 		is.position = "absolute";
-		is.left = "0";
-		is.top = "0";
+		is.left = "-10000px";
+		is.top = "-10000px";
 		img.className = "movieImage";
 
 		img.src = src;
 		img.onload = function() {
-			div.loadingImage = null;
+			div.loadingImage = false;
+			is.left = "0";
+			is.top = "0";
 
-			if (div.childNodes.length > 1) {
+			if (old) {
 				setTimeout(function() {
-					div.firstChild.style.display = "none";
+					old.style.display = "none";
 
-					div.removeChild(div.firstChild);
+					div.removeChild(old);
 
 					is.position = "static";
 				}, 20);
 			}
+			var next = div.loadingNextImage;
+			if (next) {
+				div.loadingNextImage = null;
+
+				loadImg(div, next);
+			}
 
 		};
-		div.appendChild(img);
+		div.insertBefore(img, div.firstChild);
 	}
 
 } ]);
