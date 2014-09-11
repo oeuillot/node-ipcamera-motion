@@ -68,7 +68,7 @@ function openConnection() {
 
 		multipartStream.destroy();
 
-		if (e.code === 'ECONNRESET') {
+		if (e.code === 'ECONNRESET' || e.code === 'ECONNREFUSED') {
 			setTimeout(openConnection, 1000 * 10);
 			return;
 		}
