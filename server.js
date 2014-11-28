@@ -178,7 +178,7 @@ app.get("/get/:date", function(req, res) {
 			var width = req.query.width;
 			if (width) {
 
-				console.info("Process width=" + width);
+//				console.info("Process width=" + width);
 
 				saveFile(image.path, image.bodyOffset, image.bodyLength, function(error, tmpPath) {
 
@@ -345,7 +345,6 @@ app.get("/lastMovies", function(req, res) {
 
 	var curStateId = moviesRepository.getStateId();
 	var reqStateId = req.headers['if-none-match'];
-	console.log("ETag '" + curStateId + "' '" + reqStateId + "'");
 	if (reqStateId === curStateId) {
 		res.status(404).send("Not modified");
 		return;
