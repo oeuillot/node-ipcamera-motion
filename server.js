@@ -222,7 +222,7 @@ app.get("/get/:date", function(req, res) {
 	});
 });
 
-function returnList(from, req, res, writeItemFunc) {
+function returnList(from, etag, req, res, writeItemFunc) {
 	var size = req.query.size || MAX_SIZE;
 	if (size <= 0 || !size || size > MAX_SIZE) {
 		size = MAX_SIZE;
@@ -239,10 +239,15 @@ function returnList(from, req, res, writeItemFunc) {
 			return;
 		}
 
-		res.writeHead(200, {
+		var hs = {
 			'Content-Type': 'application/json',
 			'Cache-Control': NO_CACHE_CONTROL
-		});
+		};
+		if (etag) {
+			hs.ETag = etag;
+		}
+
+		res.writeHead(200, hs);
 
 		res.write('{"from":"' + from.toISOString() + '","dates":[');
 
@@ -290,7 +295,7 @@ app.get("/from/:from", function(req, res) {
 
 	var from = new Date(fromDate);
 
-	moviesRepository.listImages(from, returnList(from, req, res, function(item, first) {
+	moviesRepository.listImages(from, returnList(from, moviesRepository.getStateId(), req, res, function(item, first) {
 
 		var str = '\"' + (new Date(item.imageDate)).toISOString() + '\"';
 		if (first) {
@@ -316,7 +321,7 @@ app.get("/movies/:from", function(req, res) {
 
 	var from = new Date(fromDate);
 
-	moviesRepository.listMovies(from, returnList(from, req, res, function(item, first) {
+	moviesRepository.listMovies(from, returnList(from, moviesRepository.getStateId(), req, res, function(item, first) {
 
 		var str = '{"start":"' + (new Date(item.imageDate)).toISOString() + '","end":"' +
 				(new Date(item.frames[item.frames.length - 1])).toISOString() + '","frames":' + item.frames.length + '}';
@@ -335,8 +340,16 @@ app.get("/lastMovies", function(req, res) {
 		size = LAST_MOVIES_MAX_SIZE;
 	}
 
+	var curStateId = moviesRepository.getStateId();
+	var reqStateId = req.headers["If-None-Match"];
+	console.log("ETag '" + curStateId + "' '" + reqStateId + "'");
+	if (reqStateId === curStateId) {
+		res.status(404).send("Not modified");
+		return;
+	}
+
 	var from = new Date();
-	moviesRepository.lastMovies(size, returnList(from, req, res, function(item, first) {
+	moviesRepository.lastMovies(size, returnList(from, curStateId, req, res, function(item, first) {
 
 		// console.error(item);
 
