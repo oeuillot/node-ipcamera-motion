@@ -1,6 +1,8 @@
 var express = require('express');
 var program = require('commander');
 var fs = require('fs');
+var gm = require('gm');
+var temp = require('temp');
 var MoviesRepository = require('./lib/moviesRepository');
 
 var NO_CACHE_CONTROL = "no-cache, private, no-store, must-revalidate, max-stale=0, max-age=1,post-check=0, pre-check=0";
@@ -23,6 +25,128 @@ var moviesRepository = new MoviesRepository({
 });
 
 var app = express();
+
+function sendImage(res, imagePath, imageOffset, imageSize, imageDate, callback) {
+
+	fs.open(imagePath, "r", function(error, fd) {
+		if (error) {
+			console.error(error);
+
+			res.status(505);
+			return callback(error);
+		}
+
+		res.writeHead(200, {
+			'Content-Type': 'image/jpeg',
+			'Content-Length': String(imageSize),
+			'X-Image-Date': (new Date(imageDate)).toISOString()
+		});
+
+		var buf = new Buffer(1024 * 64);
+		var pos = imageOffset;
+		var size = imageSize;
+
+		function writeBuf() {
+			fs.read(fd, buf, 0, Math.min(buf.length, size), pos, function(error, byteRead) {
+				if (error) {
+					console.error(error);
+
+					res.end();
+					fs.close(fd);
+					return callback(error);
+				}
+
+				// console.log("Read " + byteRead + " bytes");
+
+				var buf2 = buf;
+				if (byteRead !== buf.length) {
+					buf2 = buf.slice(0, byteRead);
+				}
+
+				res.write(buf2, function(error) {
+					if (error) {
+						console.error(error);
+
+						res.end();
+						fs.close(fd);
+						return callback(error);
+					}
+
+					// console.log("Write " + byteRead + " bytes");
+
+					pos += byteRead;
+					size -= byteRead;
+
+					if (size <= 0) {
+						res.end();
+						fs.close(fd);
+						return callback(null);
+					}
+
+					writeBuf();
+				});
+			});
+		}
+
+		writeBuf();
+	});
+}
+
+function saveFile(imagePath, pos, size, callback) {
+
+	fs.open(imagePath, "r", function(error, fdSource) {
+		if (error) {
+			return callback(error);
+		}
+
+		temp.open({
+			suffix: '.jpg'
+		}, function(error, infos) {
+			if (error) {
+				fs.close(fdSource);
+				return callback(error);
+			}
+
+			var fdTarget = infos.fd;
+			var buf = new Buffer(1024 * 64);
+
+			function writeBuf() {
+				fs.read(fdSource, buf, 0, Math.min(buf.length, size), pos, function(error, byteRead) {
+					if (error) {
+						fs.close(fdSource);
+						fs.close(fdTarget);
+						return callback(error);
+					}
+
+					// console.log("Read " + byteRead + " bytes");
+
+					fs.write(fdTarget, buf, 0, byteRead, null, function(error) {
+						if (error) {
+							fs.close(fdSource);
+							fs.close(fdTarget);
+							return callback(error);
+						}
+
+						// console.log("Write " + byteRead + " bytes");
+
+						pos += byteRead;
+						size -= byteRead;
+
+						if (size <= 0) {
+							fs.close(fdSource);
+							fs.close(fdTarget);
+							return callback(null, infos.path);
+						}
+
+						writeBuf();
+					});
+				});
+			}
+
+			writeBuf();
+		});
+	});
+}
 
 app.get("/get/:date", function(req, res) {
 
@@ -50,67 +174,50 @@ app.get("/get/:date", function(req, res) {
 			return;
 		}
 
-		fs.open(image.path, "r", function(error, fd) {
-			if (error) {
-				console.error(error);
+		if (req.query) {
+			var width = req.query.width;
+			if (width) {
+				saveFile(image.path, image.bodyOffset, image.bodyLength, function(error, tmpPath) {
 
-				res.status(505);
-				return;
-			}
-
-			res.writeHead(200, {
-				'Content-Type': 'image/jpeg',
-				'Content-Length': String(image.bodyLength),
-				'X-Image-Date': (new Date(image.imageDate)).toISOString()
-			});
-
-			var buf = new Buffer(1024 * 16);
-			var pos = image.bodyOffset;
-			var size = image.bodyLength;
-
-			function writeBuf() {
-				fs.read(fd, buf, 0, Math.min(buf.length, size), pos, function(error, byteRead) {
+					console.info("Save file to ", tmpPath);
 					if (error) {
 						console.error(error);
-
-						res.end();
-						fs.close(fd);
+						res.status(505);
 						return;
 					}
 
-					// console.log("Read " + byteRead + " bytes");
+					var tmpPathResized = tmpPath.replace(/\.jpg/g, ".resized.jpg");
+					console.info("Convert file to ", tmpPathResized);
 
-					var buf2 = buf;
-					if (byteRead !== buf.length) {
-						buf2 = buf.slice(0, byteRead);
-					}
+					gm(tmpPath).resize(parseInt(width)).write(tmpPathResized, function(error) {
+						//fs.unlink(tmpPath);
 
-					res.write(buf2, function(error) {
 						if (error) {
 							console.error(error);
-
-							res.end();
-							fs.close(fd);
+							res.status(505);
 							return;
 						}
 
-						// console.log("Write " + byteRead + " bytes");
+						fs.lstat(tmpPathResized, function(error, stats) {
+							if (error) {
+								console.error(error);
+								res.status(505);
+								return;
+							}
 
-						pos += byteRead;
-						size -= byteRead;
-
-						if (size <= 0) {
-							res.end();
-							fs.close(fd);
-							return;
-						}
-
-						writeBuf();
+							sendImage(res, tmpPathResized, 0, stats.size, image.imageDate, function(error) {
+							//	fs.unlink(tmpPathResized);
+							});
+						});
 					});
-				});
-			}
 
-			writeBuf();
+				});
+
+				return;
+			}
+		}
+
+		sendImage(res, image.path, image.bodyOffset, image.bodyLength, image.imageDate, function(error) {
 		});
 	});
 });

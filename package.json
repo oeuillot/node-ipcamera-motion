@@ -8,8 +8,10 @@
     "opencv": "latest",
     "async": "latest",
     "express": "latest",
-    "bintrees": "latest"
- },
+    "bintrees": "latest",
+    "temp": "latest",
+    "gm": "latest"
+},
   "scripts": {
    },
   "repository": "",
