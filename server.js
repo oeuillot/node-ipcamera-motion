@@ -179,7 +179,7 @@ app.get("/get/:date", function(req, res) {
 			if (width) {
 				saveFile(image.path, image.bodyOffset, image.bodyLength, function(error, tmpPath) {
 
-					console.info("Save file to ", tmpPath);
+					// console.info("Save file to ", tmpPath);
 					if (error) {
 						console.error(error);
 						res.status(505);
@@ -187,10 +187,10 @@ app.get("/get/:date", function(req, res) {
 					}
 
 					var tmpPathResized = tmpPath.replace(/\.jpg/g, ".resized.jpg");
-					console.info("Convert file to ", tmpPathResized);
+					// console.info("Convert file to ", tmpPathResized);
 
 					gm(tmpPath).resize(parseInt(width)).write(tmpPathResized, function(error) {
-						//fs.unlink(tmpPath);
+						// fs.unlink(tmpPath);
 
 						if (error) {
 							console.error(error);
@@ -206,7 +206,7 @@ app.get("/get/:date", function(req, res) {
 							}
 
 							sendImage(res, tmpPathResized, 0, stats.size, image.imageDate, function(error) {
-							//	fs.unlink(tmpPathResized);
+								fs.unlink(tmpPathResized);
 							});
 						});
 					});
