@@ -178,7 +178,7 @@ app.get("/get/:date", function(req, res) {
 			var width = req.query.width;
 			if (width) {
 
-//				console.info("Process width=" + width);
+				// console.info("Process width=" + width);
 
 				saveFile(image.path, image.bodyOffset, image.bodyLength, function(error, tmpPath) {
 
@@ -338,9 +338,15 @@ app.get("/movies/:from", function(req, res) {
 });
 
 app.get("/lastMovies", function(req, res) {
-	var size = req.query.size || LAST_MOVIES_MAX_SIZE;
+	var offset = (req.query.offset && parseInt(req.query.offset)) || 0;
+
+	var size = (req.query.size && parseInt(req.query.size)) || LAST_MOVIES_MAX_SIZE;
 	if (size <= 0 || !size || size > LAST_MOVIES_MAX_SIZE) {
 		size = LAST_MOVIES_MAX_SIZE;
+	}
+
+	if (offset > 0) {
+		size += offset;
 	}
 
 	var curStateId = moviesRepository.getStateId();
@@ -350,15 +356,21 @@ app.get("/lastMovies", function(req, res) {
 		return;
 	}
 
+	var first = true;
+	var index = 0;
 	var from = new Date();
-	moviesRepository.lastMovies(size, returnList(from, curStateId, req, res, function(item, first) {
+	moviesRepository.lastMovies(size, returnList(from, curStateId, req, res, function(item) {
 
 		// console.error(item);
+		if (index++ < offset) {
+			return;
+		}
 
 		var str = '{"start":"' + (new Date(item.imageDate)).toISOString() + '","end":"' +
 				(new Date(item.frames[item.frames.length - 1])).toISOString() + '","frames":' + item.frames.length + '}';
 		if (first) {
 			res.write(str);
+			first = false;
 			return;
 		}
 
