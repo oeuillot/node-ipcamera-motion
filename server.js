@@ -2,7 +2,6 @@ var express = require('express');
 var program = require('commander');
 var fs = require('fs');
 var gm = require('gm');
-var temp = require('temp');
 var MoviesRepository = require('./lib/moviesRepository');
 
 var NO_CACHE_CONTROL = "no-cache, private, no-store, must-revalidate, max-stale=0, max-age=1,post-check=0, pre-check=0";
@@ -92,59 +91,37 @@ function sendImage(res, imagePath, imageOffset, imageSize, imageDate, callback) 
 	});
 }
 
-function saveFile(imagePath, pos, size, callback) {
+function fileToBuffer(imagePath, pos, size, callback) {
 
 	fs.open(imagePath, "r", function(error, fdSource) {
 		if (error) {
 			return callback(error);
 		}
 
-		temp.open({
-			suffix: '.jpg'
-		}, function(error, infos) {
-			if (error) {
-				fs.close(fdSource);
-				return callback(error);
-			}
+		var buffer = new Buffer(size);
+		var bufPos = 0;
 
-			var fdTarget = infos.fd;
-			var buf = new Buffer(1024 * 64);
+		function writeBuf() {
+			fs.read(fdSource, buffer, bufPos, Math.min(buffer.length, size), pos, function(error, byteRead) {
+				if (error) {
+					fs.close(fdSource);
+					return callback(error);
+				}
 
-			function writeBuf() {
-				fs.read(fdSource, buf, 0, Math.min(buf.length, size), pos, function(error, byteRead) {
-					if (error) {
-						fs.close(fdSource);
-						fs.close(fdTarget);
-						return callback(error);
-					}
+				pos += byteRead;
+				bufPos += byteRead;
+				size -= byteRead;
 
-					// console.log("Read " + byteRead + " bytes");
+				if (size <= 0) {
+					fs.close(fdSource);
+					return callback(null, buffer);
+				}
 
-					fs.write(fdTarget, buf, 0, byteRead, null, function(error) {
-						if (error) {
-							fs.close(fdSource);
-							fs.close(fdTarget);
-							return callback(error);
-						}
+				setImmediate(writeBuf);
+			});
+		}
 
-						// console.log("Write " + byteRead + " bytes");
-
-						pos += byteRead;
-						size -= byteRead;
-
-						if (size <= 0) {
-							fs.close(fdSource);
-							fs.close(fdTarget);
-							return callback(null, infos.path);
-						}
-
-						writeBuf();
-					});
-				});
-			}
-
-			writeBuf();
-		});
+		writeBuf();
 	});
 }
 
@@ -180,7 +157,7 @@ app.get("/get/:date", function(req, res) {
 
 				// console.info("Process width=" + width);
 
-				saveFile(image.path, image.bodyOffset, image.bodyLength, function(error, tmpPath) {
+				fileToBuffer(image.path, image.bodyOffset, image.bodyLength, function(error, buffer) {
 
 					// console.info("Save file to ", tmpPath);
 					if (error) {
@@ -189,9 +166,7 @@ app.get("/get/:date", function(req, res) {
 						return;
 					}
 
-					gm(tmpPath).resize(width).toBuffer("JPG", function(error, buffer) {
-						fs.unlink(tmpPath);
-
+					gm(buffer).resize(width).toBuffer("JPG", function(error, buffer) {
 						if (error) {
 							console.error(error);
 							res.status(505);
@@ -215,6 +190,9 @@ app.get("/get/:date", function(req, res) {
 		}
 
 		sendImage(res, image.path, image.bodyOffset, image.bodyLength, image.imageDate, function(error) {
+			if (error) {
+				console.error(error);
+			}
 		});
 	});
 });
