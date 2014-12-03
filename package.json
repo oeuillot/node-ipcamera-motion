@@ -9,8 +9,8 @@
     "async": "latest",
     "express": "latest",
     "bintrees": "latest",
-    "temp": "latest",
-    "gm": "latest"
+    "gm": "latest",
+    "compression": "latest"
 },
   "scripts": {
    },

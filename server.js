@@ -1,4 +1,5 @@
 var express = require('express');
+var compression = require('compression');
 var program = require('commander');
 var fs = require('fs');
 var gm = require('gm');
@@ -24,6 +25,9 @@ var moviesRepository = new MoviesRepository({
 });
 
 var app = express();
+app.use(compression({
+  threshold: 512
+}));
 
 function sendImage(res, imagePath, imageOffset, imageSize, imageDate, callback) {
 
