@@ -192,7 +192,7 @@ app.get("/get/:date", function(req, res) {
 					var tmpPathResized = tmpPath.replace(/\.jpg/g, ".resized.jpg");
 					// console.info("Convert file to ", tmpPathResized);
 
-					gm(tmpPath).resize(parseInt(width)).write(tmpPathResized, function(error) {
+					gm(tmpPath).resize(width).write(tmpPathResized, function(error) {
 						fs.unlink(tmpPath);
 
 						if (error) {
