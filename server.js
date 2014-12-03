@@ -189,10 +189,7 @@ app.get("/get/:date", function(req, res) {
 						return;
 					}
 
-					var tmpPathResized = tmpPath.replace(/\.jpg/g, ".resized.jpg");
-					// console.info("Convert file to ", tmpPathResized);
-
-					gm(tmpPath).resize(width).write(tmpPathResized, function(error) {
+					gm(tmpPath).resize(width).toBuffer("JPG", function(error, buffer) {
 						fs.unlink(tmpPath);
 
 						if (error) {
@@ -201,17 +198,14 @@ app.get("/get/:date", function(req, res) {
 							return;
 						}
 
-						fs.lstat(tmpPathResized, function(error, stats) {
-							if (error) {
-								console.error(error);
-								res.status(505);
-								return;
-							}
-
-							sendImage(res, tmpPathResized, 0, stats.size, image.imageDate, function(error) {
-								// fs.unlink(tmpPathResized);
-							});
+						res.writeHead(200, {
+							'Content-Type': 'image/jpeg',
+							'Content-Length': String(buffer.length),
+							'X-Image-Date': (new Date(image.imageDate)).toISOString()
 						});
+
+						res.write(buffer);
+						res.end();
 					});
 
 				});
