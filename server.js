@@ -14,10 +14,15 @@ program.option("--httpPort <port>", "HttpPort", parseInt);
 
 program.option("--storePath <path>", "Store path");
 
+program.option("--heapdump", "Enable heapdump");
+
 program.parse(process.argv);
 
 if (!program.storePath) {
 	throw new Error("storePath parameter must be specified");
+}
+if (program.heapdump) {
+	var heapdump = require("heapdump");
 }
 
 var moviesRepository = new MoviesRepository({
@@ -357,3 +362,4 @@ app.get("/lastMovies", function(req, res) {
 app.use(express.static(__dirname + '/pages'));
 
 app.listen(program.httpPort || 8080);
+
