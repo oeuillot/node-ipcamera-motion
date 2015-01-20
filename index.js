@@ -16,10 +16,16 @@ program.option("--thresholdLevel <0..255>", "Set image threshold level", parseIn
 
 program.option("--showDeviation", "Enable deviation value log");
 
+program.option("--heapdump", "Enable heapdump");
+
 program.parse(process.argv);
 
 if (!program.url) {
 	throw new Error("URL parameter must be specified");
+}
+
+if (program.heapdump) {
+	var heapdump = require("heapdump");
 }
 
 if (!program.storePath) {
