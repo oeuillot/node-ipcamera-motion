@@ -10,7 +10,8 @@
     "express": "latest",
     "bintrees": "latest",
     "gm": "latest",
-    "compression": "latest"
+    "compression": "latest",
+    "node-ipcamera": "latest"
 },
   "scripts": {
    },
