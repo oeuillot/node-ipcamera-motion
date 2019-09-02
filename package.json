@@ -10,11 +10,9 @@
     "express": "latest",
     "bintrees": "latest",
     "gm": "latest",
-    "compression": "latest",
-    "node-ipcamera": "latest"
-},
-  "scripts": {
-   },
+    "compression": "latest"
+  },
+  "scripts": {},
   "repository": "",
   "keywords": [
     "Node.js",
